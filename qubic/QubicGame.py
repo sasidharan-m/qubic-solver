@@ -3,7 +3,7 @@ import numpy as np
 
 sys.path.append('..')
 from Game import Game
-from QubicLogic import Board
+from .QubicLogic import Board
 import itertools
 
 
@@ -12,7 +12,7 @@ class QubicGame(Game):
     Connect4 Game class implementing the alpha-zero-general Game interface.
     """
 
-    def __init__(self, height=None, width=None, depth = None, win_length=None, np_pieces=None):
+    def __init__(self, depth = None, height=None, width=None, win_length=None, np_pieces=None):
         Game.__init__(self)
         self._base_board = Board(height, width, depth, win_length, np_pieces)
 
@@ -106,8 +106,9 @@ class QubicGame(Game):
         for i in range(len(L)):
             comp = (L[i][0] == a)
             uq = np.unique(comp)
-            if((uq.size == 1) and (uq[0] == True)):
+            if((uq.size == 1) and (uq[0] == True) and (L[i][1] == pi)):
                 d_inds.append(i)
+                break
         for i in d_inds:
             del L[i]
         return L

@@ -6,6 +6,7 @@ pytest-3 qubic
 from collections import namedtuple
 import textwrap
 import numpy as np
+import sys
 
 from QubicGame import QubicGame
 
@@ -125,7 +126,11 @@ def test_get_valid_moves():
         ([0, 1, 2, 3, 4, 5, 6], (([False] * 7) + [True] * (64 - 7))),
         ([1, 2, 3, 4, 5], ([True] + [False] * 5 + [True] * (64 - 6))),
         ([0, 1, 2, 3, 4, 5, 6, 25, 63], ([False] * 7 + [True] * (25-7) + [False] + [True] * (63-26) + [False])),
-        #([0, 1, 2] * 3 + [3, 4, 5, 6] * 6, [True] * 3 + [False] * 4),
+        ([7, 53, 20, 8, 10, 1, 46, 3, 40, 9, 54, 59, 49, 18, 2, 5, 0, 6, 12, 11, 14, 13, 4], [False, False, False,
+        False, False, False, False, False, False, False, False, False, False, False, False, True, True, True, False,
+        True, False, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True, True,
+        True, True, True, False, True, True, True, True, True, False, True, True, False, True, True, True, False,
+        False, True, True, True, True, False, True, True, True, True])
     ]
 
     for moves, expected_valid in move_valid_pairs:

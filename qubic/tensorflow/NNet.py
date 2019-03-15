@@ -29,8 +29,9 @@ class NNetWrapper(NeuralNet):
         self.nnet = onnet(game, args)
         self.board_x, self.board_y, self.board_z = game.getBoardSize()
         self.action_size = game.getActionSize()
-
-        self.sess = tf.Session(graph=self.nnet.graph)
+        config = tf.ConfigProto()
+        config.gpu_options.allow_growth = True
+        self.sess = tf.Session(config=config, graph=self.nnet.graph)
         self.saver = None
         with tf.Session() as temp_sess:
             temp_sess.run(tf.global_variables_initializer())
