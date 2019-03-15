@@ -1,6 +1,6 @@
 import Arena
 from MCTS import MCTS
-from connect4.Connect4Game import OthelloGame, display
+from connect4.Connect4Game import Connect4Game, display
 from connect4.Connect4Players import *
 from connect4.tensorflow.NNet import NNetWrapper as NNet
 
@@ -12,15 +12,15 @@ use this script to play any two agents against each other, or play manually with
 any agent.
 """
 args = dotdict({
-    'checkpoint': '.connect4/temp/'
+    'checkpoint': '.connect4/temp/',
     'load_folder_file': ('connect4/dev/models/8x100x50','connect4/best.pth.tar'),
 })
 g = Connect4Game(6)
 
 # all players
 rp = RandomPlayer(g).play
-gp = GreedyOthelloPlayer(g).play
-hp = HumanOthelloPlayer(g).play
+gp = OneStepLookaheadConnect4Player(g).play
+hp = HumanConnect4Player(g).play
 
 # nnet players
 n1 = NNet(g)
