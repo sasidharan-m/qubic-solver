@@ -33,7 +33,7 @@ class Board():
         row = int((action % 16) / 4)
         col = int((action % 16) % 4)
         if(self.np_pieces[rack][row][col] != 0):
-            raise ValueError("Can't play position [%s,%s,%s] on board %s" % (rack,row,column, self))
+            raise ValueError("Can't play position [%s,%s,%s] on board %s" % (rack,row,col, self))
 
         self.np_pieces[rack][row][col] = player
 
@@ -70,7 +70,7 @@ class Board():
         return Board(self.height, self.width, self.depth, self.win_length, np_pieces)
 
 
-    def return_streaks(board):
+    def returnStreaks(self, board):
         streak = np.zeros((76, 4), dtype=np.uint8)
 
         # ULTRA DIAGONALS in 3D

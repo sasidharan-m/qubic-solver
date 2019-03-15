@@ -3,7 +3,8 @@ import numpy as np
 
 sys.path.append('..')
 from Game import Game
-from .QubicLogic import Board
+from QubicLogic import Board
+import itertools
 
 
 class QubicGame(Game):
@@ -93,19 +94,22 @@ class QubicGame(Game):
 
     def getAllTransformations(self,a,pi):
         pi_ = self.convertListToCube(pi)
-        a_out = self.get_cube_rotations(a)
-        pi_out = self.get_cube_rotations(pi_)
+        a_out = self.getCubeRotations(a)
+        pi_out = self.getCubeRotations(pi_)
         L = []
         for i in range(6):
             for j in range(2):
                 for k in range(2):
                     for l in range(2):
                         L.append((a_out[i][j][k][l], self.convertCubeToList(pi_out[i][j][k][l])))
+        d_inds = []
         for i in range(len(L)):
-            comp = (L[i] == a)
+            comp = (L[i][0] == a)
             uq = np.unique(comp)
             if((uq.size == 1) and (uq[0] == True)):
-                del L[i]
+                d_inds.append(i)
+        for i in d_inds:
+            del L[i]
         return L
 
     def getSymmetries(self, board, pi):
