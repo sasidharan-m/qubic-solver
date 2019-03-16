@@ -41,7 +41,7 @@ class MCTS():
             probs = [0]*len(counts)
             probs[bestA]=1
             return probs
-        #elif(sum(counts) == 0):
+        elif(sum(counts) == 0):
             #print('tempThreshold too low...')
             #If you see this message a lot of times try increasing the tempThreshold
             temp = 1
