@@ -42,10 +42,14 @@ class Coach():
         board = self.game.getInitBoard()
         self.curPlayer = 1
         episodeStep = 0
-
         while True:
+            #print('here')
             episodeStep += 1
             canonicalBoard = self.game.getCanonicalForm(board,self.curPlayer)
+            can_board = board * self.curPlayer
+            if(not(np.array_equal(can_board, canonicalBoard))):
+                print('Canonical Board and Current Board states not same!!!')
+            #If you see this line getting printed something is terribly wrong
             temp = int(episodeStep < self.args.tempThreshold)
 
             pi = self.mcts.getActionProb(canonicalBoard, temp=temp)
@@ -53,6 +57,8 @@ class Coach():
             for b,p in sym:
                 trainExamples.append([b, self.curPlayer, p, None])
             action = np.random.choice(len(pi), p=pi)
+            #print('!!!:')
+            #print(board)
             board, self.curPlayer = self.game.getNextState(board, self.curPlayer, action)
 
             r = self.game.getGameEnded(board, self.curPlayer)

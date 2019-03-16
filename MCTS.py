@@ -1,5 +1,6 @@
 import math
 import numpy as np
+import random
 EPS = 1e-8
 
 class MCTS():
@@ -32,16 +33,33 @@ class MCTS():
             self.search(canonicalBoard)
 
         s = self.game.stringRepresentation(canonicalBoard)
-        counts = [self.Nsa[(s,a)] if (s,a) in self.Nsa else 0 for a in range(self.game.getActionSize())]
+        vals = self.game.getValidMoves(canonicalBoard, 1)
+        counts = [self.Nsa[(s,a)] if (((s,a) in self.Nsa) and (vals[a])) else 0 for a in range(self.game.getActionSize())]
 
-        if temp==0:
+        if ((temp==0) and (sum(counts))):
             bestA = np.argmax(counts)
             probs = [0]*len(counts)
             probs[bestA]=1
             return probs
-
+        #elif(sum(counts) == 0):
+            #print('tempThreshold too low...')
+            #If you see this message a lot of times try increasing the tempThreshold
+            temp = 1
         counts = [x**(1./temp) for x in counts]
-        probs = [x/float(sum(counts)) for x in counts]
+        probs = []
+        if(sum(counts) == 0):
+            for e in vals:
+                probs.append(float(1/float(sum(vals))) * e)
+            #print('Handling Divide by zero...')
+            #If you see this message a lot increase the number of MCTS sims
+        else:
+            probs = [x/float(sum(counts)) for x in counts]
+        #print('canonical Board:')
+        #print(canonicalBoard)
+        #print('probabilities: ')
+        #print(probs)
+        #print('valid actions:')
+        #print(vals)
         #for (s,a) in self.Nsa:
         #    print('state is:')
         #    print(s)
