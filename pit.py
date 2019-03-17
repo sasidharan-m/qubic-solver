@@ -21,11 +21,12 @@ g = Connect4Game(6)
 rp = RandomPlayer(g).play
 gp = OneStepLookaheadConnect4Player(g).play
 hp = HumanConnect4Player(g).play
+mp = MiniMaxConnect4Player(g).play
 
 # nnet players
 n1 = NNet(g)
 #n1.load_checkpoint('./pretrained_models/othello/pytorch/','6x100x25_best.pth.tar')
-n1.load_checkpoint(folder=args.checkpoint, filename='temp.pth.tar')
+n1.load_checkpoint(folder=args.checkpoint, filename='best.pth.tar')
 args1 = dotdict({'numMCTSSims': 50, 'cpuct':1.0})
 mcts1 = MCTS(g, n1, args1)
 n1p = lambda x: np.argmax(mcts1.getActionProb(x, temp=0))
@@ -37,5 +38,5 @@ n1p = lambda x: np.argmax(mcts1.getActionProb(x, temp=0))
 #mcts2 = MCTS(g, n2, args2)
 #n2p = lambda x: np.argmax(mcts2.getActionProb(x, temp=0))
 
-arena = Arena.Arena(n1p, hp, g, display=display)
+arena = Arena.Arena(n1p, mp, g, display=display)
 print(arena.playGames(2, verbose=True))
