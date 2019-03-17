@@ -1,5 +1,6 @@
 import numpy as np
-
+from numpy import inf
+import math
 
 class RandomPlayer():
     def __init__(self, game):
@@ -11,6 +12,7 @@ class RandomPlayer():
         c = np.random.randint(4)
 
         valids = self.game.getValidMoves(board, 1)
+        a = 16*d + 4*r + c
         while valids[a] != 1:
             a = np.random.randint(self.game.getActionSize())
         return a
@@ -134,7 +136,7 @@ class MiniMaxQubicPlayer():
             return streak
 
         # CHECK POINTS, on each row slice (3*16 in 1d, 24 in 2d, 4 in 4d)
-        def value(self, streak, player):
+        def value(streak, player):
 
             points = 0
             for i in range(len(streak)):
@@ -270,14 +272,18 @@ class MiniMaxQubicPlayer():
 
 
     def play(self, board):
-        self.depth2go = 3
+        self.depth2go = 2
         self.player = 1
+        self.depth = board.shape[0]
+        self.rows = board.shape[1]
+        self.cols = board.shape[2]
         tmp_board = np.copy(board)
-        for i in range(self.rows):
-            for j in range(self.cols):
-                if(tmp_board[i][j] == -1):
-                    tmp_board[i][j] = 2
-        [reward, action] = self.MaxValue(player, board, -inf, inf, depth2go)
+        for i in range(self.depth):
+            for j in range(self.rows):
+                for k in range(self.cols):
+                    if(tmp_board[i][j][k] == -1):
+                        tmp_board[i][j][k] = 2
+        [reward, action] = self.MaxValue(self.player, board, -inf, inf, self.depth2go)
         if action == -1:
-            raise ValueError ('Invalid move happened while playing. Aborting...')
+            return -1
         return (16*action[0] + 4*action[1] + action[2])
