@@ -22,26 +22,27 @@ def pselect(ptype):
         return 2
     if(ptype == 'alphazero'):
         return 3
+    if(ptype == 'human'):
+        return 4
     print('Invalid player')
     sys.exit(2)
 
 def main(argv):
     game_type = ''
-    player_types = ['random', 'heuristic', 'minimax', 'alphazero']
+    player_types = ['random', 'heuristic', 'minimax', 'alphazero', 'human']
     p1 = ''
     p2 = ''
     try:
         opts, args = getopt.getopt(argv,"hp:o:",["help","player=","opponent="])
     except getopt.GetoptError:
-        print('pit.py -p <player type> -o <opponent type> (random, heuristic, minimax, alphazero)')
+        print('pit.py -p <player type> -o <opponent type> (random, heuristic, minimax, alphazero, human)')
         sys.exit(2)
-    print(opts)
     if len(opts) != 2:
-        print('pit.py -p <player type> -o <opponent type> (random, heuristic, minimax, alphazero)')
+        print('pit.py -p <player type> -o <opponent type> (random, heuristic, minimax, alphazero, human)')
         sys.exit(2)
     for opt, arg in opts:
         if opt == '-h':
-            print('pit.py -p <player type> -o <opponent type> (random, heuristic, minimax, alphazero)')
+            print('pit.py -p <player type> -o <opponent type> (random, heuristic, minimax, alphazero, human)')
             sys.exit()
         elif opt in ('-p', '--player'):
             p1 = arg
@@ -53,6 +54,7 @@ def main(argv):
         print('heuristic')
         print('minimax')
         print('alphazero')
+        print('human')
         sys.exit(2)
 
 
@@ -77,12 +79,12 @@ def main(argv):
     mcts1 = MCTS(g, n1, args1)
     n1p = lambda x: np.argmax(mcts1.getActionProb(x, temp=0))
 
-    player_list = [rp, gp, hp, mp]
+    player_list = [rp, gp, mp, n1p, mp]
 
 
-    print('playing' + player_types[p1_ind] + 'against ' + player_types[p2_ind] + '...')
+    #print('playing' + player_types[p1_ind] + 'against ' + player_types[p2_ind] + '...')
     arena = Arena.Arena(player_list[p1_ind], player_list[p2_ind], g, display=display)
-    print(arena.playGames(2, verbose=True))
+    print(arena.playGames(10, verbose=True))
 
 if __name__=="__main__":
     main(sys.argv[1:])

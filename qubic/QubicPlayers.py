@@ -19,7 +19,7 @@ class RandomPlayer():
         return a
 
 
-class HumanConnect4Player():
+class HumanQubicPlayer():
     def __init__(self, game):
         self.game = game
 
