@@ -1,6 +1,7 @@
 import numpy as np
 from numpy import inf
 import math
+from numpy.random import randint
 
 class RandomPlayer():
     def __init__(self, game):
@@ -287,3 +288,225 @@ class MiniMaxQubicPlayer():
         if action == -1:
             return -1
         return (16*action[0] + 4*action[1] + action[2])
+
+
+class HeuristicQubicPlayer():
+    def __init__(self, game):
+        self.game = game
+        self.move_number = 0  # odd moves are "black": black moves 1st
+        self.N = 4
+        self.lines, self.line_sums = self.extract_lines(self.N)
+        self.points = self.initialize_point_dictionary()
+
+    def get_possible_moves(self):
+        empty = np.where(self.board == 0)
+        return [(empty[0][i], empty[1][i], empty[2][i]) for i in range(len(empty[0]))]
+
+    # Utility to extract all potential win lines (board empty).
+    def extract_lines(self, N):
+        ''' Extracts all potential winning "lines", returned as a list.
+            Run once when a new game is initialized.   '''
+
+        lines = []
+        for i in range(N):
+            # Lines // to coord directions ( 3N^2 in total ).
+            for j in range(N):
+                lines.append(tuple([(i, j, k) for k in range(N)]))
+                lines.append(tuple([(i, k, j) for k in range(N)]))
+                lines.append(tuple([(k, i, j) for k in range(N)]))
+
+            # Short diagonals ( 6N in total ).
+            #print( '** len(lines) =', len(lines)
+            lines.append(tuple([(k, k, i) for k in range(N)]))
+            lines.append(tuple([(N - 1 - k, k, i) for k in range(N)]))
+            lines.append(tuple([(k, i, k) for k in range(N)]))
+            lines.append(tuple([(N - 1 - k, i, k) for k in range(N)]))
+            lines.append(tuple([(i, k, k) for k in range(N)]))
+            lines.append(tuple([(i, N - 1 - k, k) for k in range(N)]))
+
+        # Long diagonals ( 4 in total ).
+        lines.append(tuple([(k, k, k) for k in range(N)]))
+        lines.append(tuple([(k, k, N - 1 - k) for k in range(N)]))
+        lines.append(tuple([(k, N - 1 - k, k) for k in range(N)]))
+        lines.append(tuple([(N - 1 - k, k, k) for k in range(N)]))
+
+        # Return this list of possible winning lines.
+        L1 = len(lines)
+        lines = list(set(lines))
+        #L2 = len(lines)
+        #assert L1 == L2,  'In extract_lines: LINES NOT UNIQUE!!!'
+
+        # Also return an initialized line_sum.
+        line_sum = [[0, 0, N] for _ in range(len(lines))]
+        return lines, line_sum
+
+    def initialize_point_dictionary(self):
+        ''' Initializes a dictionary with the points as keys, and containing
+            info about each line through each point:
+            {(i, j, k):  { line_1: [#black, #white, #empty],
+                                     ...
+                           line_m: [#black, #white, #empty] }
+                 .                    .
+                 .                    .
+                 .                    .
+            Run when a new game is initialized.   '''
+        points = dict()
+        for i in range(self.N):
+            for j in range(self.N):
+                for k in range(self.N):
+                    if (i, j, k) not in points:
+                        points[(i, j, k)] = [line_num
+                                             for line_num, line in enumerate(self.lines)
+                                             if (i, j, k) in line]
+        return points
+
+
+    def board_value(self):
+        ''' Input a board and its associated winning lines.
+            Output a board valuation (each unoccupied array position will have a
+            value equal to the number of lines through that point.
+            This ignores all non-empty lines.  '''
+
+        # Determine who made the last move.
+        if self.move_number % 2 == 0:   # change the mod for additional players
+            pos = True  # moves 0, 2, 4, ...  correspond to a board entry of +1 (white)
+        else:
+            pos = False  # moves 1, 2, 3 ...  correspond to a board entry of -1 (black)
+
+        L = [line for line in self.lines]  # a copy of lines
+
+        # Remove a line from the possible winning lines,
+        # whenever the opponent is blocking that line.
+        if pos:
+            opponent = np.where(self.board == -1)
+            blocked = [(opponent[0][i], opponent[1][i], opponent[2][i]) for i in range(len(opponent[0]))]
+            for index in blocked:
+                for line in self.lines:
+                    if (index in line) and (line in L):
+                        L.pop(L.index(line))
+        else:
+            opponent = np.where(self.board == 1)
+            blocked = [(opponent[0][i], opponent[1][i], opponent[2][i]) for i in range(len(opponent[0]))]
+            for index in blocked:
+                for line in self.lines:
+                    if (index in line) and (line in L):
+                        L.pop(L.index(line))
+
+        # Initialize valuation array.
+        V = np.zeros((self.N, self.N, self.N))
+
+        # For each array point, sum up the number of lines in input array "lines"
+        # containing that point. The more lines containing a point, the more value that point.
+        for i in range(self.N):
+            for j in range(self.N):
+                for k in range(self.N):
+                    point = (i, j, k)
+                    V[i, j, k] = sum([point in line for line in L])
+
+        # Zero out any already occupied points on the game board.
+        # ): Alas, all the good ones are already taken :(
+        V[np.where(self.board != 0)] = 0
+        return V
+
+
+    def assess_board(self):
+        ''' This assesses the board, from the point of view of the next player
+            to move, a move_number one greater than the current self.move_number.
+            white_to_move = ((self.move_number + 1) % 2 == 0)
+
+            Here we make use of the points dictionary (one entry per point on board).
+            Each entry consists of a dictionary which has for its keys the line_numbers
+            of all lines through that point. Each entry of these line dictionaries
+            contains a 3-tuple list wherein:
+
+                 num_black = self.points[(i, j, k)][line_num][0]
+                 num_white = self.points[(i, j, k)][line_num][1]
+                 num_empty = self.points[(i, j, k)][line_num][2]
+
+            We now use this dictionary to create an energy map of the board,
+            where the occupied spaces are -inf, and the higher energies are the better
+            paces to play.   '''
+
+        E = self.board_value()  # this measures future potential
+        E -= E.max() + 1  # E.max is now -1
+        E[np.where(self.board != 0)] = -np.inf  # these spaces are occupied
+
+        white_to_move = ((self.move_number % 2) == 0)
+
+        for i in range(self.N):
+            for j in range(self.N):
+                for k in range(self.N):
+                    if E[i, j, k] == -np.inf: continue  # already occupied
+
+                    # Fetch the dictionary of lines through (i, j, k).
+                    lines_thru_ijk = self.points[(i, j, k)]
+
+                    for line_num in lines_thru_ijk:
+                        # For each line through this point, fetch the number of black,
+                        # white, and empty spaces on that line.
+                        num_black = self.line_sums[line_num][0]
+                        num_white = self.line_sums[line_num][1]
+                        num_empty = self.line_sums[line_num][2]
+
+                        # If 1 move away from winning (or losing), the right move is obvious!
+                        if num_empty == 1:
+                            if (((num_white == self.N - 1) and white_to_move) or
+                                ((num_black == self.N - 1) and not white_to_move)):
+                                E[i, j, k] = 400  #  moving here wins
+                            elif (((num_white == self.N - 1) and not white_to_move) or
+                                  ((num_black == self.N - 1) and white_to_move)):
+                                E[i, j, k] = 200  #  moving here blocks opponent's win
+
+                        # See if we're 2 moves away from winning (or losing)...
+                        elif num_empty == 2:
+                            # See if there's another line through this point with 2 empty spaces...
+                            for line2_num in lines_thru_ijk:
+                                if line2_num != line_num:
+                                    # Does this one have 2 empty spaces?
+                                    #num_empty2 = self.points[(i, j, k)][line2_num][2]
+                                    num_empty2 = self.line_sums[line2_num][2]
+                                    if num_empty2 == 2:
+                                        # For each line through this point, fetch the number of black,
+                                        # white, and empty spaces on that line.
+                                        num_black2 = self.line_sums[line2_num][0]
+                                        num_white2 = self.line_sums[line2_num][1]
+
+                                        # Here we're looking for a win in 2 moves, or
+                                        # a blocking of an opponent's win in 2 moves.
+                                        if (((num_white2 == self.N - 2) and white_to_move) or
+                                            ((num_black2 == self.N - 2) and not white_to_move)):
+                                            E[i, j, k] = 100  #  moving here, white wins in 2 moves
+                                        elif (((num_white2 == self.N - 2) and not white_to_move) or
+                                            ((num_black2 == self.N - 2) and white_to_move)):
+                                            E[i, j, k] = 50  #  moving here, black wins in 2 moves
+                                    # We have a line with two empty spaces, one of which is on another
+                                    # line with 3 empty spaces. We may want to play at one of those other
+                                    # empty spaces, to set up a possible forced win, the num_empty2 = 2 case.
+                                    elif num_empty2 == 3:
+                                        points_on_line = self.lines[line2_num]
+                                        for new_point in points_on_line:
+                                            if new_point != (i, j, k) and self.board[new_point] == 0:
+                                                #if E[new_point] < 10:
+                                                #    E[new_point] = 10
+                                                E[new_point] += 30
+
+        #if 50 not in E and 100 not in E and 200 not in E and 400 not in E:
+        return E
+
+
+    def play(self, board):
+        ''' Make a move. '''
+        self.board = board
+        # Construct an energy map E of the current game bohttp://sourceforge.net/projects/numpy/files/ard.
+        E = self.assess_board()
+        # Fetch a list of possible moves.
+        empty = self.get_possible_moves()
+        # Eliminate all moves that aren't on maximum energy spaces.
+        max_energy = E.max()
+        empty = [point for i, point in enumerate(empty) if E[point] == max_energy]
+
+        #print('empty =', empty)
+        # Randomly pick a move from these empty spaces.
+        move = empty[randint(0, len(empty))]
+
+        return (16*move[0] + 4*move[1] + move[2])
