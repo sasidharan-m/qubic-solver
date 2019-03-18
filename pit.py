@@ -7,36 +7,82 @@ from connect4.tensorflow.NNet import NNetWrapper as NNet
 import numpy as np
 from utils import *
 
+import sys, getopt
 """
 use this script to play any two agents against each other, or play manually with
 any agent.
 """
-args = dotdict({
-    'checkpoint': '.connect4/temp/',
-    'load_folder_file': ('connect4/dev/models/8x100x50','connect4/best.pth.tar'),
-})
-g = Connect4Game(6)
 
-# all players
-rp = RandomPlayer(g).play
-gp = OneStepLookaheadConnect4Player(g).play
-hp = HumanConnect4Player(g).play
-mp = MiniMaxConnect4Player(g).play
+def pselect(ptype):
+    if(ptype == 'random'):
+        return 0
+    if(ptype == 'heuristic'):
+        return 1
+    if(ptype == 'minimax'):
+        return 2
+    if(ptype == 'alphazero'):
+        return 3
+    print('Invalid player')
+    sys.exit(2)
 
-# nnet players
-n1 = NNet(g)
-#n1.load_checkpoint('./pretrained_models/othello/pytorch/','6x100x25_best.pth.tar')
-n1.load_checkpoint(folder=args.checkpoint, filename='best.pth.tar')
-args1 = dotdict({'numMCTSSims': 50, 'cpuct':1.0})
-mcts1 = MCTS(g, n1, args1)
-n1p = lambda x: np.argmax(mcts1.getActionProb(x, temp=0))
+def main(argv):
+    game_type = ''
+    player_types = ['random', 'heuristic', 'minimax', 'alphazero']
+    p1 = ''
+    p2 = ''
+    try:
+        opts, args = getopt.getopt(argv,"hp:o:",["help","player=","opponent="])
+    except getopt.GetoptError:
+        print('pit.py -p <player type> -o <opponent type> (random, heuristic, minimax, alphazero)')
+        sys.exit(2)
+    print(opts)
+    if len(opts) != 2:
+        print('pit.py -p <player type> -o <opponent type> (random, heuristic, minimax, alphazero)')
+        sys.exit(2)
+    for opt, arg in opts:
+        if opt == '-h':
+            print('pit.py -p <player type> -o <opponent type> (random, heuristic, minimax, alphazero)')
+            sys.exit()
+        elif opt in ('-p', '--player'):
+            p1 = arg
+        elif opt in ('-o', '--opponent'):
+            p2 = arg
+    if ((p1 not in player_types) or (p2 not in player_types)):
+        print('Invalid player types. Valid player types are:')
+        print('random')
+        print('heuristic')
+        print('minimax')
+        print('alphazero')
+        sys.exit(2)
 
 
-#n2 = NNet(g)
-#n2.load_checkpoint('/dev/8x50x25/','best.pth.tar')
-#args2 = dotdict({'numMCTSSims': 25, 'cpuct':1.0})
-#mcts2 = MCTS(g, n2, args2)
-#n2p = lambda x: np.argmax(mcts2.getActionProb(x, temp=0))
+    args = dotdict({
+        'checkpoint': '.connect4/temp/',
+        'load_folder_file': ('connect4/dev/models/8x100x50','connect4/best.pth.tar'),
+    })
+    g = Connect4Game(6)
+    p1_ind = pselect(p1)
+    p2_ind = pselect(p2)
+    print('playing ' + player_types[p1_ind] + ' against ' + player_types[p2_ind] + '...')
+    # all players
+    rp = RandomPlayer(g).play
+    gp = OneStepLookaheadConnect4Player(g).play
+    hp = HumanConnect4Player(g).play
+    mp = MiniMaxConnect4Player(g).play
 
-arena = Arena.Arena(n1p, mp, g, display=display)
-print(arena.playGames(2, verbose=True))
+    # nnet players
+    n1 = NNet(g)
+    n1.load_checkpoint(folder=args.checkpoint, filename='best.pth.tar')
+    args1 = dotdict({'numMCTSSims': 50, 'cpuct':1.0})
+    mcts1 = MCTS(g, n1, args1)
+    n1p = lambda x: np.argmax(mcts1.getActionProb(x, temp=0))
+
+    player_list = [rp, gp, hp, mp]
+
+
+    print('playing' + player_types[p1_ind] + 'against ' + player_types[p2_ind] + '...')
+    arena = Arena.Arena(player_list[p1_ind], player_list[p2_ind], g, display=display)
+    print(arena.playGames(2, verbose=True))
+
+if __name__=="__main__":
+    main(sys.argv[1:])
